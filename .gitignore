@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+.Python
+lib/
+lib64/
+parts/
+sdist/
+var/
+
+# Environments
+.env
+
+# Mac
+.DS_Store
+
+#VS code
+vscode/
