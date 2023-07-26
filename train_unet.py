@@ -2,17 +2,18 @@
 from cmath import log
 import os
 import time
+import logging
 import sys
 import numpy as np
-import itertools
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
 import segmentation_models_pytorch as smp
 import source
-
-
+from source.constant import (
+    OEM
+)
 
 def main(args):
     # -----------------------
@@ -27,22 +28,13 @@ def main(args):
     randomize = bool(args.randomize)
     if dataset == "OEM":
         #OpenEarthMap
-        classes = [1, 2, 3, 4, 5, 6, 7, 8]
-        label_to_anno = {0: [0, 0, 0], 1: [128,   0,   0], 2:[0, 255, 36], \
-                    3:[148, 148, 148], 4:[255, 255, 255] , 5: [34, 97, 38], \
-                    6 :[  0,  69, 255], 7: [ 75, 181,  73], 8: [222,  31,   7]}
-        class_obj = {0:"None", 1: "bareland", 2:"grass", 3: "pavement", \
-                4:"road", 5: "tree", 6: "water", 7:"cropland", 8: "building"}
-        # 0: backgound, 1: bareland, 2: grass, 3: pavement
-        # 4: road, 5: tree, 6: water, 7: cropland, 8: building 
+        classes = OEM.classes
+        label_to_anno = OEM.label_to_anno
+        class_obj = OEM.class_obj
         
     elif dataset == "FLAIR":
-        #Flair
+        #FLAIR
         classes = list(range(1, 13))
-        """
-        label_to_anno = ...
-        class_obj = ...
-        """
 
     n_classes = len(classes) + 1
     classes_wt = np.ones([n_classes], dtype=np.float32)

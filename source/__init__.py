@@ -9,3 +9,4 @@ from . import options
 from . import fcsmix
 from . import dct_torch
 from . import networks
+from . import constant
