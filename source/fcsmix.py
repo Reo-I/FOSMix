@@ -65,6 +65,13 @@ class FCsMix(nn.Module):
         elif self.args.randomize and (not self.args.optimize):
             pass
         
+        if self.args.optimize and (not self.args.MFI):
+            self.maskG = GenerateMask(nz = 100)
+        elif self.args.optimize and self.args.MFI:
+            self.maskG = networks.load_MFI_network(args=args)
+        elif self.args.randomize and (not self.args.optimize):
+            pass
+        
         if self.args.pb_set == "resolution":
             row = np.array(range(512))
             self.xx, self.yy = np.meshgrid(row,row)

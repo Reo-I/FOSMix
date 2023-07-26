@@ -48,6 +48,39 @@ oem_meta_data = {
     }
 }
 
-flair_meta_data = ...
+flair_meta_data = {
+    "classes": list(range(1, 13)),
+    "label_to_anno": {
+        0: [0, 0, 0], 
+        1: [219, 14, 154], 
+        2: [147, 142, 123], 
+        3: [248, 12, 0], 
+        4: [169, 113, 1], 
+        5: [21, 83, 174], 
+        6: [25, 74, 38], 
+        7: [70, 228, 131], 
+        8: [243, 166, 13], 
+        9: [102, 0, 130], 
+        10: [85, 255, 0], 
+        11: [255, 243, 13], 
+        12: [228, 223, 124]
+    },
+    "class_obj" : {
+        0:"None", 
+        1: "building", 
+        2:"pervious surface", 
+        3: "impervious surface", 
+        4:"bare soil",
+        5: "water", 
+        6: "coniferous",
+        7:"deciduous", 
+        8: "brushwood", 
+        9: "vineyard", 
+        10: "herbaceous vegetation",
+        11:"agricultural land",
+        12:"plowed land"
+    }
+}
 
 OEM = DatasetConstants(**oem_meta_data)
+FLAIR = DatasetConstants(**flair_meta_data)

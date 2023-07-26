@@ -1,14 +1,8 @@
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
 from PIL import Image
-
-
 import pathlib
-
-# mpl.use("Agg")
-# plt.ioff()
 
 
 def progress(train_logs, valid_logs, loss_nm, metric_nm, nepochs, outdir, fn_out, test_ious, opt):
@@ -30,9 +24,10 @@ def progress(train_logs, valid_logs, loss_nm, metric_nm, nepochs, outdir, fn_out
     label = f"Train, {metric_nm}={max(score_t):6.4f} in Epoch={idx}"
     plt.plot(epochs, score_t, "b", label=label)
 
-    idx = np.nonzero(score_v == max(score_v))[0][0]
-    label = f"Valid, {metric_nm}={max(score_v):6.4f} in Epoch={idx}"
-    plt.plot(epochs, score_v, "r", label=label)
+    if len(score_v)>0:
+        idx = np.nonzero(score_v == max(score_v))[0][0] + (len(score_t) - len(score_v))
+        label = f"Valid, {metric_nm}={max(score_v):6.4f} in Epoch={idx}"
+        plt.plot(range(len(score_t) - len(score_v), len(score_t)), score_v, "r", label=label)
 
     if len(test_ious)>0:
         plt.scatter(test_ious.keys(), test_ious.values(), c = "deepskyblue", s = 60, label = "Test")
@@ -44,6 +39,7 @@ def progress(train_logs, valid_logs, loss_nm, metric_nm, nepochs, outdir, fn_out
     plt.ylabel(metric_nm)
     plt.ylim(0, 1)
     plt.legend()
+
 
     # Train and validation loss
     # -------------------------
@@ -112,4 +108,4 @@ def show_test_result(matrix, class_obj_list, path):
     plt.ylabel("Ground Truth")
     plt.savefig(f"{path}/test_matrix.png", bbox_inches='tight')
     plt.show()
-    return 
+    return None
