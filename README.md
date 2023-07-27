@@ -13,6 +13,13 @@ Modify the installed packages
 ```bash
 ./modify_package_contents.sh
 ```
+## TODO
+- 不要なコードの削除
+- printからloggerに変更
+ - modify_package._contents.shの動作確認
+ - sourceディレクトリのファイル置き場のクリーン化
+ - colabで動作確認
+
 
 # コードの説明
 

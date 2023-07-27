@@ -48,9 +48,6 @@ def entropy_loss(v):
     n, c, h, w = v.size()
     return -torch.sum(torch.mul(v, torch.log2(v + 1e-30))) / (n * h * w * np.log2(c))
 
-
-
-
 def format_logs(logs):
     str_logs = ["{}={:.3}".format(k, v) for k, v in logs.items()]
     return ", ".join(str_logs)
@@ -113,7 +110,7 @@ def train_epoch(
         outputs = model.forward(x)
         loss = criterion(outputs, y)
         if args.randomize:
-            if args.optimize: 
+            if args.optimize:
                 loss += criterion(opt_mixed_y, y)
                 lasso = args.LAMBDA1 * torch.mean(msk)
                 var_mask = args.LAMBDA2 / torch.var(msk) 
@@ -206,8 +203,6 @@ def valid_epoch(
     print("Valid IoU: ", score_meter/n_non_class)
     return logs
 
-
-
 def test(
     model=None,
     metric=None,
@@ -276,11 +271,6 @@ def test(
 
     return test_iou/test_n, df
 
-
-
-
-
-
 def final(
     model=None,
     metric=None,
@@ -308,14 +298,12 @@ def final(
         h, w = sample["shape"]
 
         with torch.no_grad():
-            msk = model(x) 
-            #msk = torch.softmax(msk[:, :, ...], dim=1)
+            msk = model(x)
             msk = msk.cpu().numpy()
             pred = (msk[0, :, :, :] + msk[1, :, :, ::-1] + msk[2, :, ::-1, :] + msk[3, :, ::-1, ::-1])/4
         y_pr = pred.argmax(axis=0).astype("uint8")
         if not args.test_crop:
             y_pr = cv2.resize(y_pr, (int(w[0]), int(h[0])), interpolation=cv2.INTER_NEAREST)
-
 
         each_iou = np.zeros(n_classes-1)
         each_n = np.zeros(n_classes-1)
@@ -334,7 +322,6 @@ def final(
 
         test_n += each_n
         test_iou+= each_iou
-            
         #save the predicted img
         if (epoch+1 ==0) and (not args.test_crop):
             rgb_fname = save_predicted_img(sample, y_gt, y_pr, classes, l2a, path = path+"/img")

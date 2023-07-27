@@ -1,11 +1,9 @@
 import os
 import numpy as np
-#import rasterio
 import re
 import random
 import rasterio
 from PIL import Image
-#import tifffile as tif
 import albumentations as A
 
 
@@ -24,45 +22,6 @@ def load_grayscale(path):
     src = rasterio.open(path, "r")
     return (src.read(1)).astype(np.uint8)
 
-
-def make_masks(r_list):
-    """
-    return the binary matrix to extract band-pass, size: (block_size, block_size, len(r_list))
-    """
-    
-    block_size = 512
-    masks = []
-    before_mask = np.zeros((block_size, block_size))
-    for m in range( len(r_list) ):
-        matrix = np.zeros((block_size, block_size))
-        for i in range(block_size):
-            for j in range(block_size):
-                d = i**2 + j**2
-                if d <=r_list[m]**2:
-                    #print(m, i, j)
-                    matrix[i, j] = 1
-                else:
-                    #print(m, i,j , "break")
-                    break
-            if (d>r_list[m]**2) and (j==0):
-                #print(m, i,j , "Break")
-                break
-        masks.append(matrix - before_mask)
-        before_mask = matrix
-    masks.append(np.ones((block_size, block_size) ) - before_mask)
-
-    """
-    bpf = np.zeros((3, 512, 512))
-    row = np.array(range(512))
-    xx, yy = np.meshgrid(row,row)
-    start_r =16
-    end_r = 512
-    bpf[:, (np.sqrt(xx**2 + yy**2)>start_r) &(np.sqrt(xx**2 + yy**2)<=end_r)] = 1
-    """
-    return masks
-
-
-
 class Dataset(BaseDataset):
     def __init__(self, img_list, ano_list, ref_list = None, classes=None, \
         size=512, train=False, final = False, randomize = True, args = None, \
@@ -70,7 +29,7 @@ class Dataset(BaseDataset):
         
         self.img_list = img_list
         self.ano_list = ano_list
-        self.ref_list = ref_list 
+        self.ref_list = ref_list
         self.concatenate_list = self.img_list + self.ref_list
         self.args = args
         self.color_aug = aug.color_augm
@@ -95,13 +54,7 @@ class Dataset(BaseDataset):
 
         self.load_multiband = load_multiband
         self.load_grayscale = load_grayscale
-        
-        
-        #----------
-        # for randomize FCs' parameters
-        #r_list = [8,  16, 32, 64, 96, 128,  256, 512]
-        #self.masks = make_masks(r_list)
-        #----------
+
         self.pad = A.Compose([A.PadIfNeeded(min_height=self.size, min_width=self.size)])
         self.randcrop_for_ref = T.RandomCrop(self.size, pad_if_needed=True, padding_mode = "symmetric")
 

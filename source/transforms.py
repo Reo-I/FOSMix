@@ -84,7 +84,6 @@ def final_augm(sample, size = 512, args = None, p_down_scale = None):
     img = np.array(sample["image"])
     if args.pb_set == "resolution":
         img = A.Downscale(scale_min=args.down_scale, scale_max=args.down_scale, p=1)(image=img)['image']
-    #print(img.shape)
     h, w = img.shape[:2]
     power = math.ceil(np.log2(h) / np.log2(2))
     shape = (2 ** power, 2 ** power)

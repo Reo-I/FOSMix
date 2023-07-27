@@ -49,22 +49,13 @@ class FCsMix(nn.Module):
     def __init__(self, args = False):
         """
         Args:
-          alpha (float): parameter of the Beta distribution.
-          eps (float): scaling parameter to avoid numerical issues.
+        alpha (float): parameter of the Beta distribution.
+        eps (float): scaling parameter to avoid numerical issues.
         """
         super().__init__()
         self._activated = True
-        #---------
         self.args = args
-        #----------
 
-        if self.args.optimize and (not self.args.MFI):
-            self.maskG = GenerateMask(nz = 100)
-        elif self.args.optimize and self.args.MFI:
-            self.maskG = networks.load_MFI_network(args=args)
-        elif self.args.randomize and (not self.args.optimize):
-            pass
-        
         if self.args.optimize and (not self.args.MFI):
             self.maskG = GenerateMask(nz = 100)
         elif self.args.optimize and self.args.MFI:
@@ -108,30 +99,6 @@ class FCsMix(nn.Module):
             mk_full = torch.randint(low=0, high=2, size=(C, W, H), device=x.device, dtype =torch.float)
             mk_full = mk_full.reshape(C, -1)
 
-        """
-        _, index_content = torch.sort(imF.reshape(B,C,-1))  ## sort content feature
-        value_style, _ = torch.sort(reF.contiguous().reshape(B,C,-1))      ## sort style feature
-        inverse_index = index_content.argsort(-1)
-        transferred_content = imF.reshape(B,C,-1) + value_style.gather(-1, inverse_index)*(1 - mk) - imF.reshape(B,C,-1).detach()*(1 - mk)
-
-        if not self.args.MFI:
-            return dct_torch.idct_2d(transferred_content.view(B, C, W, H), norm = "ortho"), mk.view(-1, W, H)
-        return dct_torch.idct_2d(transferred_content.view(B, C, W, H), norm = "ortho"), mk.view(B, C, W, H)
-        """
-
-        """
-        if self.args.pb_set == "resolution":
-            start_r_list = [32, 64, 128, 256]
-            s_i = random.choice(range(len(start_r_list)))
-            start_r = start_r_list[s_i]
-            end_r = random.choice(start_r_list[s_i+1:]+[512])
-
-            bpf = torch.ones((3, 512, 512), device=reF.device)
-            print(start_r, end_r)
-            bpf[:, (np.sqrt(self.xx**2 + self.yy**2)>start_r) &(np.sqrt(self.xx**2 + self.yy**2)<=end_r)] = 0
-            reF = reF * bpf
-        """
-
         opt_mixed_img, full_mixed_img = EFDM(imF, reF, mk_opt=mk_opt, mk_full=mk_full, shape=imF.size())
         if (not self.args.optimize) and (self.args.fullmask or self.args.halfmask):
             return None, full_mixed_img, None
@@ -140,7 +107,6 @@ class FCsMix(nn.Module):
     
     def load_parameters(self, netG_path, device):
         state_dict = torch.load(netG_path,map_location=device)
-        
         new_state_dict = OrderedDict()
         for k, v in state_dict.items():
             if device == "cpu" and 'module' in k:
@@ -152,7 +118,6 @@ class FCsMix(nn.Module):
             
         self.maskG.eval()
 
-        
 def EFDM(imF, reF, mk_opt, mk_full, shape):
     B, C, W, H = shape
     _, index_content = torch.sort(imF.reshape(B,C,-1))  ## sort content feature
@@ -168,6 +133,3 @@ def EFDM(imF, reF, mk_opt, mk_full, shape):
         full_mixed = dct_torch.idct_2d(transferred_content.view(B, C, W, H), norm = "ortho")
 
     return opt_mixed, full_mixed
-
-
-    

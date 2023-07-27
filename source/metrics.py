@@ -81,14 +81,11 @@ class IoU(nn.Module):
 
     @torch.no_grad()
     def forward(self, input, target):
-        #input = torch.softmax(input, dim=1)
         input = torch.argmax(input, dim = 1)
-        #scores = []
         scores = np.zeros(target.size(1))
         num_not_None = np.zeros(target.size(1))
 
         for i in range(1, target.shape[1]):  # background is not included
-            #ypr = input[:, i, :, :].sigmoid() > 0.5
             ypr = input == i
             ygt = target[:, i, :, :]
 

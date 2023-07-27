@@ -47,7 +47,7 @@ class BaseOptions():
         parser.add_argument("--network", type =str, default="resnet50", \
             help="the main segmentation model: choose the model from 'resnet50', 'resnet101', or 'vgg16'. ")
         parser.add_argument("--test_crop", type=int, default=0, \
-            help = "evaliate model with the target domain without reshape (just random crop)")
+            help = "evaluate model with the target domain without reshape (just random crop)")
         parser.add_argument("--G_use_ref", type=int, default=0, \
             help = "0: Mask generator takes source images, 1: takes source and reference images")
 
@@ -63,19 +63,16 @@ class BaseOptions():
         opt = parser.parse_args()
         return opt
 
-    
     def show_options(self, opt):
         message = ''
         message += '----------------- Options ---------------\n'
         for k, v in sorted(vars(opt).items()):
-            #message += '{:<15}: {:<30}{}\n'.format(str(k), str(v), comment)
-            #message += str(k)+" "*int(30-len(str(k))*1.5) + ": " + str(v)+ " "*int(30-len(str(v))*1.5) + "\n"
             if str(k) == "imgnet_path":
                 continue
             elif str(k) in ["optimize", "randomize", "use_only_ref", "MFI", "fullmask",\
-                 "halfmask", "COF","COF_all", "test_crop", "final"]:
+                "halfmask", "COF","COF_all", "test_crop", "final"]:
                 message += '{:<15}: {:<30}\n'.format(str(k), str(bool(v)))
             else:
                 message += '{:<15}: {:<30}\n'.format(str(k), str(v))
         message += '----------------- End -------------------'
-        print(message)
+        print(f"{message}")
