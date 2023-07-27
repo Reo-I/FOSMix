@@ -59,7 +59,6 @@ class BaseOptions():
             help = "the probability to use the imagenet for reference, 0:not use imagenet for ref")
         parser.add_argument("--imgnet_path", type= str, default="/work/gk36/share/ILSVRC2015/Data/CLS-LOC/train/")
 
-
         opt = parser.parse_args()
         return opt
 

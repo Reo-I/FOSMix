@@ -1,14 +1,9 @@
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
 from PIL import Image
-
-
 import pathlib
 
-# mpl.use("Agg")
-# plt.ioff()
 
 
 def progress(train_logs, valid_logs, loss_nm, metric_nm, nepochs, outdir, fn_out, test_ious, opt):
@@ -112,4 +107,4 @@ def show_test_result(matrix, class_obj_list, path):
     plt.ylabel("Ground Truth")
     plt.savefig(f"{path}/test_matrix.png", bbox_inches='tight')
     plt.show()
-    return 
+    return None
