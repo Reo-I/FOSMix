@@ -65,14 +65,15 @@ def train_epoch(
     dataloader=None,
     epoch=None,
     n_epochs=None,
+    n_classes=None,
     device="cpu",
     args = None, 
 ):
     
     loss_meter = AverageMeter()
     mask_loss_meter = AverageMeter()
-    score_meter = np.zeros(args.n_class)
-    n_non_class = np.zeros(args.n_class)
+    score_meter = np.zeros(n_classes-1)
+    n_non_class = np.zeros(n_classes-1)
     logs = {}
 
     n_gpus = torch.cuda.device_count()
@@ -170,12 +171,13 @@ def valid_epoch(
     metric=None,
     dataloader=None,
     device="cpu",
+    n_classes=None,
     args = None
 ):
 
     loss_meter = AverageMeter()
-    score_meter = np.zeros(args.n_class)
-    n_non_class = np.zeros(args.n_class)
+    score_meter = np.zeros(n_classes-1)
+    n_non_class = np.zeros(n_classes-1)
     n_gpus = torch.cuda.device_count()
     logs = {}
     model.to(device).eval()
@@ -209,6 +211,7 @@ def valid_epoch(
 def test(
     model=None,
     metric=None,
+    n_classes=None,
     dataloader=None,
     device="cpu",
     args = None, 
@@ -218,10 +221,10 @@ def test(
     logs = None, 
     epoch = None, 
 ):
-    test_iou = np.zeros(args.n_class)
-    test_n = np.zeros(args.n_class)
-    classes = list(range(1, args.n_class+1))
-    uniform_data = np.zeros((8, 8))
+    test_iou = np.zeros(n_classes-1)
+    test_n = np.zeros(n_classes-1)
+    classes = list(range(1, n_classes))
+    uniform_data = np.zeros((n_classes-1, n_classes-1))
     n_gpus = torch.cuda.device_count()
 
     model.to(device).eval()
@@ -241,9 +244,9 @@ def test(
         y_pr = pred.argmax(axis=1).astype("uint8")
 
         for b in range(y_pr.shape[0]):
-            each_iou = np.zeros(8)
-            each_n = np.zeros(8)
-            for i in range(1, 9):
+            each_iou = np.zeros(n_classes-1)
+            each_n = np.zeros(n_classes-1)
+            for i in range(1, n_classes):
                 y_pr_ = torch.Tensor(y_pr[b]) == i
                 y_gt_ = y_gt[b] == i
                 #calc iou
@@ -281,6 +284,7 @@ def test(
 def final(
     model=None,
     metric=None,
+    n_classes=None,
     dataloader=None,
     device="cpu",
     args = None, 
@@ -290,10 +294,10 @@ def final(
     logs = None, 
     epoch = None, 
 ):
-    test_iou = np.zeros(args.n_class)
-    test_n = np.zeros(args.n_class)
-    classes = list(range(1, args.n_class+1))
-    uniform_data = np.zeros((8, 8))
+    test_iou = np.zeros(n_classes-1)
+    test_n = np.zeros(n_classes-1)
+    classes = list(range(1, n_classes))
+    uniform_data = np.zeros((n_classes-1, n_classes-1))
     
 
     model.to(device).eval()
@@ -313,9 +317,9 @@ def final(
             y_pr = cv2.resize(y_pr, (int(w[0]), int(h[0])), interpolation=cv2.INTER_NEAREST)
 
 
-        each_iou = np.zeros(8)
-        each_n = np.zeros(8)
-        for i in range(1, 9):
+        each_iou = np.zeros(n_classes-1)
+        each_n = np.zeros(n_classes-1)
+        for i in range(1, n_classes):
             y_pr_ = torch.Tensor(y_pr) == i
             y_gt_ = y_gt == i
             #calc iou

@@ -93,8 +93,8 @@ class Dataset(BaseDataset):
         self.t = T.Compose([T.ToTensor()])
         self.mask2tensor = aug.mask2tensor(classes = classes)
 
-        #self.load_multiband = load_multiband
-        #self.load_grayscale = load_grayscale
+        self.load_multiband = load_multiband
+        self.load_grayscale = load_grayscale
         
         
         #----------
@@ -117,33 +117,36 @@ class Dataset(BaseDataset):
         if (img.size[0]>self.size) and (img.size[1]>self.size):
             #Randomly decide the position to crop image
             i, j, h, w = T.RandomCrop.get_params(img, output_size=(self.size, self.size))
-            croped_img = np.array(T.functional.crop(img, i, j, h, w))
-            croped_ano = np.array(T.functional.crop(ano, i, j, h, w))
-        else:
+            img = np.array(T.functional.crop(img, i, j, h, w))
+            ano = np.array(T.functional.crop(ano, i, j, h, w))
+        elif (img.size[0]<self.size) or (img.size[1]<self.size):
             #For the case where the img size is smaller than self.size (512)
             i = random.randint(img.size[0] - self.size, 0)
             j = random.randint(img.size[1] - self.size, 0)
             h, w = self.size, self.size
 
             croped_data = self.pad(image=np.array(img), mask = np.array(ano))
-            croped_img = croped_data["image"]
-            croped_ano = croped_data["mask"]
+            img = croped_data["image"]
+            ano = croped_data["mask"]
 
         if ref is None:
-            return croped_img, croped_ano, None
+            return img, ano, None
         
         #For the trainging phase, ref is also randomly cropped 
-        croped_ref = self.randcrop_for_ref(ref)
-        return croped_img, croped_ano, np.array(croped_ref)
+        ref = self.randcrop_for_ref(ref)
+        return img, ano, np.array(ref)
     
 
     def __getitem__(self, idx):
-        domain, name  = re.findall("/openearthmap/(.*)/images/(.*).tif", self.img_list[idx] )[0]
-        #print(domain, name)
-        img = Image.open(self.img_list[idx])
-        msk = Image.open(self.ano_list[idx])
-        #img = self.load_multiband(self.img_list[idx])
-        #msk = self.load_grayscale(self.ano_list[idx])
+        if self.args.dataset == "OEM":
+            domain, name  = re.findall("/openearthmap/(.*)/images/(.*).tif", self.img_list[idx] )[0]
+            img = Image.open(self.img_list[idx])
+            msk = Image.open(self.ano_list[idx])
+        elif self.args.dataset == "FLAIR":
+            domain, name  = re.findall("/flair/(.*)/.*/img/(.*).tif", self.img_list[idx] )[0]
+            img = self.load_multiband(self.img_list[idx])[:, :, :3]
+            msk = self.load_grayscale(self.ano_list[idx])
+            msk[msk>12] = 0
         ref = None
 
         if self.train and self.randomize:
@@ -163,21 +166,25 @@ class Dataset(BaseDataset):
                     p = [1/2*(1/len(self.img_list))]*len(self.img_list) \
                         + [1/2*(1/len(self.ref_list))]*len(self.ref_list)
                 )
-                ref = Image.open(self.concatenate_list[ref_idx])
+                ref = Image.open(self.concatenate_list[ref_idx]) if self.args.dataset == "OEM" \
+                else self.load_multiband(self.concatenate_list[idx])[:, :, :3]
             else:
                 #ref from reference domains
                 ref_idx = np.random.choice(len(self.ref_list))
-                ref = Image.open(self.ref_list[ref_idx])
-
-            img, msk, ref = self.random_crop(img, msk, ref)
-            if self.args.pb_set == "resolution":
-                ref = A.Downscale(scale_min=0.1, scale_max=0.8, p=0.8)(image=ref)['image']
+                ref = Image.open(self.ref_list[ref_idx]) if self.args.dataset == "OEM" \
+                else self.load_multiband(self.ref_list[idx])[:, :, :3]
+            
+            if self.args.dataset == "OEM":
+                img, msk, ref = self.random_crop(img, msk, ref)
+                if self.args.pb_set == "resolution":
+                    ref = A.Downscale(scale_min=0.1, scale_max=0.8, p=0.8)(image=ref)['image']
 
         elif (not self.final) or (self.args.test_crop):
             #For Validation and Test phases, and for no_randomize ver.
-            img, msk, ref = self.random_crop(img, msk, ref)
+            if self.args.dataset == "OEM":
+                img, msk, ref = self.random_crop(img, msk, ref)
         
-        if self.train and (self.args.pb_set == "resolution"):
+        if self.train and (self.args.dataset == "OEM" and self.args.pb_set == "resolution"):
             img = A.Downscale(scale_min=0.1, scale_max=0.8, p=0.8)(image=img)['image']
         
 
@@ -201,7 +208,3 @@ class Dataset(BaseDataset):
     
     def __len__(self):
         return len(self.img_list)
-    
-
-    
-

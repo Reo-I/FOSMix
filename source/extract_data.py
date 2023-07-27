@@ -47,6 +47,22 @@ class ExtractData:
         self.dataset = dataset
         self.path = path
 
+    def extract_fns_oem(self, pb_set):
+        #OEM dataset
+        pb_name = 'split_file/' if pb_set == "region" else 'split_file_for_resolution/'
+        fns = [[] for _ in range(len(self.phase))]
+
+        for p in range(len(self.phase)):
+            with open("./"+pb_name+self.phase[p]+"_fns.txt", "r") as f:
+                fns[p] = f.read().split("\n")[:-1]
+            self.img_file[p] = list(map(\
+                lambda x: self.path+re.findall("(.*)_\d*.tif", x)[0]+ "/images/"+x, fns[p]\
+                    ))
+            self.ano_file[p] = list(map(\
+                lambda x: x.replace('images', 'labels'), self.img_file[p]\
+                    ))
+        return self.img_file, self.ano_file
+    
     def extract_fns_flair(self):
         #FLAIR dataset
         with open("./split_file_FLAIR/val.txt") as f:
@@ -89,7 +105,7 @@ def extract_fns_flair(path, phase):
         for d in phase_domains[3]:
             img_file[3].extend(glob.glob(path + d + "/*/img/*.tif"))
 
-    all_domains = sorted(set([d_name for d_name in os.listdir(path) if re.fullmatch(r'D0\d{2}_20\d{2}', d_name)])  - set(val_d))
+    all_domains = sorted(set([d_name for d_name in os.listdir(path) if re.fullmatch(r'D0\d{2}_20\d{2}', d_name)])  - set(phase_domains[3]))
     for d in all_domains:
         d_num = int(d[2:4])
         if d_num %3 == 0:

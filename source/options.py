@@ -7,7 +7,8 @@ class BaseOptions():
 
     def initialize(self):
         parser = argparse.ArgumentParser()
-        parser.add_argument("--dataset", type=str, default="dataset")
+        parser.add_argument("--dataset", type=str, default="OEM", \
+            help="OEM: OpenEarthMap or FLAIR: https://codalab.lisn.upsaclay.fr/competitions/8769#participate ")
         parser.add_argument("--seed", type=int, default=0)
         parser.add_argument("--learning_rate", type=float, default=1e-4)
         parser.add_argument("--batch_size", type=int, default=12)

@@ -4,8 +4,6 @@ import seaborn as sns
 from PIL import Image
 import pathlib
 
-
-
 def progress(train_logs, valid_logs, loss_nm, metric_nm, nepochs, outdir, fn_out, test_ious, opt):
     loss_t = [dic[loss_nm] for dic in train_logs]
     if opt.randomize and opt.optimize:
@@ -25,9 +23,10 @@ def progress(train_logs, valid_logs, loss_nm, metric_nm, nepochs, outdir, fn_out
     label = f"Train, {metric_nm}={max(score_t):6.4f} in Epoch={idx}"
     plt.plot(epochs, score_t, "b", label=label)
 
-    idx = np.nonzero(score_v == max(score_v))[0][0]
-    label = f"Valid, {metric_nm}={max(score_v):6.4f} in Epoch={idx}"
-    plt.plot(epochs, score_v, "r", label=label)
+    if len(score_v)>0:
+        idx = np.nonzero(score_v == max(score_v))[0][0] + (len(score_t) - len(score_v))
+        label = f"Valid, {metric_nm}={max(score_v):6.4f} in Epoch={idx}"
+        plt.plot(range(len(score_t) - len(score_v), len(score_t)), score_v, "r", label=label)
 
     if len(test_ious)>0:
         plt.scatter(test_ious.keys(), test_ious.values(), c = "deepskyblue", s = 60, label = "Test")
@@ -39,6 +38,7 @@ def progress(train_logs, valid_logs, loss_nm, metric_nm, nepochs, outdir, fn_out
     plt.ylabel(metric_nm)
     plt.ylim(0, 1)
     plt.legend()
+
 
     # Train and validation loss
     # -------------------------

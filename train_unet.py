@@ -12,7 +12,8 @@ from torch.utils.data import DataLoader
 import segmentation_models_pytorch as smp
 import source
 from source.constant import (
-    OEM
+    OEM,
+    FLAIR
 )
 
 def main(args):
@@ -34,7 +35,9 @@ def main(args):
         
     elif dataset == "FLAIR":
         #FLAIR
-        classes = list(range(1, 13))
+        classes = FLAIR.classes
+        label_to_anno = FLAIR.label_to_anno
+        class_obj = FLAIR.class_obj
 
     n_classes = len(classes) + 1
     classes_wt = np.ones([n_classes], dtype=np.float32)
@@ -110,7 +113,7 @@ def main(args):
     fcmixnet = source.fcsmix.FCsMix(args = args)
     # network = source.unet.UNet(in_channels=3*args.n_input_channels, classes=n_classes)
 
-    network = source.networks.load_network(args=args)
+    network = source.networks.load_network(args=args, n_classes=n_classes)
     if args.loss_type == "jaccard":
         criterion = source.losses.JaccardLoss(class_weights=classes_wt)
     elif args.loss_type == "bce":
@@ -170,6 +173,7 @@ def main(args):
             dataloader=train_loader,
             epoch = epoch,
             n_epochs = n_epochs,
+            n_classes = n_classes,
             device=device,
             args = args,
         )
@@ -180,6 +184,7 @@ def main(args):
             metric=metric,
             dataloader=valid_loader,
             device=device,
+            n_classes=n_classes,
             args=args, 
         )
 
@@ -191,6 +196,7 @@ def main(args):
             test_iou, _ = source.runner.test(
                 model=network,
                 metric=source.metrics.iou,
+                n_classes = n_classes,
                 dataloader=test_loader,
                 device=device,
                 args=args, 
@@ -257,6 +263,7 @@ def main(args):
     test_iou, df = source.runner.final(
             model=network,
             metric=source.metrics.iou,
+            n_classes=n_classes,
             dataloader=test_loader,
             device=device,
             args=args, 

@@ -21,7 +21,8 @@ cd /work/gu14/k36090/opt_randomize
 python train_unet.py \
 --dataset OEM \
 --n_epochs 150 \
---ver 50 --seed 0 \
+--ver 50 \
+--seed 0 \
 --learning_rate 0.0001 \
 --randomize 1 \
 --optimize 1 \
@@ -34,6 +35,6 @@ python train_unet.py \
 --COF 1 \
 --network resnet50 \
 --test_crop 1 \
---pb_set resolution \
+--pb_set region \
 --down_scale 0.25 
 

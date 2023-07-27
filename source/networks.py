@@ -1,20 +1,37 @@
 import segmentation_models_pytorch as smp
 
-def load_network(args):
+def load_network(args, n_classes):
     if args.network == "resnet50":
         net = smp.Unet(
             in_channels = 3,
-            classes=args.n_class+1,
+            classes=n_classes,
             activation=None,
             encoder_weights="imagenet",
             encoder_name="resnet50",
             decoder_attention_type="scse",
         )
-
+    elif args.network == "resnet50_ibn_a":
+        net = smp.Unet(
+            in_channels = 3,
+            classes=n_classes,
+            activation=None,
+            encoder_weights="imagenet",
+            encoder_name = "resnet50_ibn_a",
+            decoder_attention_type="scse",
+        )
+    elif args.network == "resnet50_ibn_b":
+        net = smp.Unet(
+            in_channels = 3,
+            classes=n_classes,
+            activation=None,
+            encoder_weights="imagenet",
+            encoder_name = "resnet50_ibn_b",
+            decoder_attention_type="scse",
+        )
     elif args.network == "resnet101":
         net = smp.Unet(
             in_channels = 3,
-            classes=args.n_class+1,
+            classes=n_classes,
             activation=None,
             encoder_weights="imagenet",
             encoder_name = "resnet101",
@@ -24,7 +41,7 @@ def load_network(args):
     elif args.network == "vgg16":
         net = smp.Unet(
             in_channels = 3,
-            classes=args.n_class+1,
+            classes=n_classes,
             activation=None,
             encoder_weights="imagenet",
             encoder_name = "vgg16",
