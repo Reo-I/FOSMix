@@ -19,22 +19,22 @@ cd /work/gu14/k36090/opt_randomize
 
 # execute your main program.
 python train_unet.py \
---dataset OEM \
---n_epochs 150 \
---ver 50 \
---seed 0 \
---learning_rate 0.0001 \
---randomize 1 \
---optimize 1 \
---aug_color 0.5 \
---LAMBDA1 10.0 \
---LAMBDA2 0.1 \
---LAMBDA3 0.00001 \
---MFI 1 \
---fullmask 1 \
---COF 1 \
---network resnet50 \
---test_crop 1 \
---pb_set region \
---down_scale 0.25 
+    --dataset OEM \
+    --n_epochs 150 \
+    --ver 50 \
+    --seed 0 \
+    --learning_rate 0.0001 \
+    --randomize 1 \
+    --optimize 1 \
+    --aug_color 0.5 \
+    --LAMBDA1 10.0 \
+    --LAMBDA2 0.1 \
+    --LAMBDA3 0.00001 \
+    --MFI 1 \
+    --fullmask 1 \
+    --COF 1 \
+    --network resnet50 \
+    --test_crop 1 \
+    --pb_set region \
+    --down_scale 0.25 
 

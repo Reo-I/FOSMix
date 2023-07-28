@@ -49,24 +49,22 @@ class FCsMix(nn.Module):
     def __init__(self, args = False):
         """
         Args:
-        alpha (float): parameter of the Beta distribution.
-        eps (float): scaling parameter to avoid numerical issues.
+        args (dict): parameter of arguments
         """
         super().__init__()
         self._activated = True
         self.args = args
 
         if self.args.optimize and (not self.args.MFI):
+            # Create the mask from a specific seed, not from the image.
             self.maskG = GenerateMask(nz = 100)
         elif self.args.optimize and self.args.MFI:
+            # make mask from image though generator
             self.maskG = networks.load_MFI_network(args=args)
-        elif self.args.randomize and (not self.args.optimize):
-            pass
         
         if self.args.pb_set == "resolution":
             row = np.array(range(512))
             self.xx, self.yy = np.meshgrid(row,row)
-            
             
     def forward(self, x, ref=None):
         imF = dct_torch.dct_2d(x, norm = "ortho")
@@ -119,11 +117,14 @@ class FCsMix(nn.Module):
         self.maskG.eval()
 
 def EFDM(imF, reF, mk_opt, mk_full, shape):
-    B, C, W, H = shape
+    """
+    This function is largely based on EFDM apart from the addition of the mask.
+    Please referred to EFDM paper (https://github.com/YBZh/EFDM)
+    """
+    B, C, W, H = shape #Batch, Channels, Width, Height
     _, index_content = torch.sort(imF.reshape(B,C,-1))  ## sort content feature
     value_style, _ = torch.sort(reF.contiguous().reshape(B,C,-1))      ## sort style feature
     inverse_index = index_content.argsort(-1)
-
     opt_mixed, full_mixed = None, None
     if mk_opt is not None:
         transferred_content = imF.reshape(B,C,-1) + value_style.gather(-1, inverse_index)*(1 - mk_opt) - imF.reshape(B,C,-1).detach()*(1 - mk_opt)
@@ -131,5 +132,4 @@ def EFDM(imF, reF, mk_opt, mk_full, shape):
     if mk_full is not None:
         transferred_content = imF.reshape(B,C,-1) + value_style.gather(-1, inverse_index)*(1 - mk_full) - imF.reshape(B,C,-1).detach()*(1 - mk_full)
         full_mixed = dct_torch.idct_2d(transferred_content.view(B, C, W, H), norm = "ortho")
-
     return opt_mixed, full_mixed

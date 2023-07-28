@@ -1,0 +1,30 @@
+{
+    "version": 1,
+    "disable_existing_loggers": false,
+    "formatters": {
+        "simple": {
+            "format": "[%(asctime)s] %(levelname)s {%(filename)s:%(lineno)d}: %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S"
+        }
+    },
+
+    "handlers": {
+        "consoleHandler": {
+            "class": "source.utils.ColoredStreamHandler",
+            "level": "INFO",
+            "formatter": "simple",
+            "stream": "ext://sys.stdout"
+        },
+        "fileHandler": {
+            "class": "logging.FileHandler",
+            "level": "INFO",
+            "formatter": "simple",
+            "filename": "logfile.log"
+        }
+    },
+
+    "root": {
+        "level": "INFO",
+        "handlers": ["consoleHandler", "fileHandler"]
+    }
+}

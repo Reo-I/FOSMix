@@ -1,16 +1,16 @@
-from random import random
-from source.utils import save_predicted_img, show_test_result
-
 import torch
 import torch.nn.functional as F
 
-#from tqdm import tqdm
 import numpy as np
 import pandas as pd
 import cv2
 import pathlib
+import logging
 
+from source.utils import save_predicted_img, show_test_result
+from source.constant import BatchData
 
+logger = logging.getLogger(__name__)
 np.set_printoptions(suppress=True, precision=3, floatmode='fixed')
 
 class AverageMeter:
@@ -31,27 +31,9 @@ class AverageMeter:
         self.count += n
         self.avg = self.sum / self.count
 
-def softmax(x):
-    #softmax function (stabel ver.)
-    y = np.exp(x - np.max(x))
-    f_x = y / np.sum(y)
-    return f_x
-
-
-def entropy_loss(v):
-    """
-        Entropy loss for probabilistic prediction vectors
-        input: batch_size x channels x h x w
-        output: batch_size x 1 x h x w
-    """
-    assert v.dim() == 4
-    n, c, h, w = v.size()
-    return -torch.sum(torch.mul(v, torch.log2(v + 1e-30))) / (n * h * w * np.log2(c))
-
 def format_logs(logs):
     str_logs = ["{}={:.3}".format(k, v) for k, v in logs.items()]
     return ", ".join(str_logs)
-
 
 def train_epoch(
     premodel=None,
@@ -89,7 +71,7 @@ def train_epoch(
         n = x.shape[0]
 
         if n <n_gpus:
-            print("skip ", n)
+            logger.info("skip %s", n)
             continue
         if args.optimize:
             optimizers["fcsmix"].zero_grad()
@@ -158,7 +140,7 @@ def train_epoch(
         n_iteration+=1
         #------------------------------------------------------------
 
-    print("Train IoU: ", score_meter/n_non_class)
+    logger.info("Train IoU: %s", score_meter/n_non_class)
     return logs
 
 
@@ -185,7 +167,7 @@ def valid_epoch(
         y = sample["y"].to(device)
         n = x.shape[0]
         if n <n_gpus:
-            print("skip ", n)
+            logger.info("skip %s", n)
             continue
 
         with torch.no_grad():
@@ -193,14 +175,12 @@ def valid_epoch(
             loss = criterion(outputs, y)
         loss_meter.update(loss.cpu().detach().numpy(), n=n)
         scores, num_not = metric(outputs, y)
-        #print(scores, num_not)
         score_meter +=scores
         n_non_class += num_not
 
         logs.update({criterion.name: loss_meter.avg})
         logs.update({metric.name: score_meter/n_non_class})
-        #iterator.set_postfix_str(format_logs(logs))
-    print("Valid IoU: ", score_meter/n_non_class)
+    logger.info("Valid IoU: %s", score_meter/n_non_class)
     return logs
 
 def test(
@@ -230,12 +210,11 @@ def test(
         h, w = sample["shape"]
         n = x.shape[0]
         if n < n_gpus:
-            print("skip ", n)
+            logger.info("skip %s", n)
             continue
         
         with torch.no_grad():
             pred = model.forward(x).cpu().detach().numpy()
-            
         y_pr = pred.argmax(axis=1).astype("uint8")
 
         for b in range(y_pr.shape[0]):
@@ -256,7 +235,6 @@ def test(
 
             test_n += each_n
             test_iou+= each_iou
-            
             rgb_fname = pathlib.Path(sample["fn"][0]).stem
             log = dict(zip(np.array(list(class_obj.values()))[1:][each_n>0.5] , each_iou[each_n>0.5]))
             log["fn"] = rgb_fname
@@ -264,12 +242,12 @@ def test(
             log["domain"] = sample["domain"][b]
             logs.append(log)
 
-    df = pd.DataFrame(logs, columns=["epoch"] + list(class_obj.values())[1:] + ["fn", "domain"])
+    df_results = pd.DataFrame(logs, columns=["epoch"] + list(class_obj.values())[1:] + ["fn", "domain"])
     if epoch +1 == 0:
         uniform_data = uniform_data/uniform_data.sum(axis = 1)[:,None]
         show_test_result(uniform_data, list(class_obj.values())[1:], path)
 
-    return test_iou/test_n, df
+    return test_iou/test_n, df_results
 
 def final(
     model=None,
@@ -289,9 +267,7 @@ def final(
     classes = list(range(1, n_classes))
     uniform_data = np.zeros((n_classes-1, n_classes-1))
     
-
     model.to(device).eval()
-
     for sample in dataloader:
         x = sample["x"][0].to(device, dtype=torch.float)
         y_gt = sample["y"][0]
@@ -334,9 +310,9 @@ def final(
         log["epoch"] = epoch+1 if epoch+1 !=0 else "final"
         log["domain"] = sample["domain"][0]
         logs.append(log)
-    df = pd.DataFrame(logs, columns=["epoch"] + list(class_obj.values())[1:] + ["fn", "domain"])
+    df_results = pd.DataFrame(logs, columns=["epoch"] + list(class_obj.values())[1:] + ["fn", "domain"])
     if epoch +1 == 0:
         uniform_data = uniform_data/uniform_data.sum(axis = 1)[:,None]
         show_test_result(uniform_data, list(class_obj.values())[1:], path)
 
-    return test_iou/test_n, df
+    return test_iou/test_n, df_results

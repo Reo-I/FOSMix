@@ -11,10 +11,15 @@ from torch.utils.data import DataLoader
 
 import segmentation_models_pytorch as smp
 import source
-from source.constant import (
-    OEM,
-    FLAIR
+from source.load_data import (
+    dataset as customized_dataset,
+    extract_data,
 )
+from source.models import fcsmix, networks
+from source.training import losses, metrics, runner
+from source.constant import OEM, FLAIR
+
+logger = logging.getLogger(__name__)
 
 def main(args):
     # -----------------------
@@ -46,7 +51,7 @@ def main(args):
     if args.prob_imagenet_ref<0 or args.prob_imagenet_ref >1:
         raise TypeError("set the probability of use ImageNet for reference from 0 to 1")
     elif args.prob_imagenet_ref>0 and args.server == "wisteria":
-        print("sample reference from ImageNet")
+        logger.info("sample reference from ImageNet")
 
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -54,7 +59,7 @@ def main(args):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-    outdir = "weights" + args.ver 
+    outdir = "weights" + args.ver
     os.makedirs(outdir, exist_ok=True)
     results_img_dir = f"{outdir}/img"
     os.makedirs(results_img_dir, exist_ok=True)
@@ -63,82 +68,69 @@ def main(args):
     # -------------------------------------------
     # --- split training and validation sets ---
     # -------------------------------------------
-    phase = ["train", "ref", "test", "val"]
-    img_file = [[] for _ in range(len(phase))]
-    ano_file = [[] for _ in range(len(phase))]
-    phase_domains = [[] for _ in range(len(phase))]
+    if args.server == "wisteria":
+        path = "/work/gu15/k36090/" # change this to your data path
+    elif args.server == "colab":
+        path = "/content/drive/My Drive/research/data/"
+
 
     if dataset == "OEM":
-        path = "/work/gu15/k36090/openearthmap/*/images/*.tif"
-        pb_name = 'split_file/' if pb_set == "region" else 'split_file_for_resolution/'
-
-        if not os.path.isfile(f"./{pb_name}train_path_fns.txt"):
-            print(f"making file path for {pb_set}")
-            source.extract_data.extract_fns(path, pb_name)
-
-        for p in range(len(phase)):
-            with open(pb_name+phase[p]+"_path_fns.txt", "r") as f:
-                img_file[p] =  f.read().split("\n")[:-1]
-            ano_file[p] = list(map(lambda x: x.replace('images', 'labels'), img_file[p]))
+        path = path + "openearthmap/"
+        exd = extract_data.ExtractData(dataset=dataset, path=path)
+        img_file, ano_file = exd.extract_fns_oem(pb_set=pb_set)
     
     elif dataset == "FLAIR":
-        path = "/work/gu15/k36090/flair/"
-        exd = source.extract_data.ExtractData(dataset = dataset, path = path)
+        path = path + "flair/"
+        exd = extract_data.ExtractData(dataset = dataset, path = path)
         img_file, ano_file = exd.extract_fns_flair()
 
-
-    print("Train samples :", len(img_file[0]))
-    print("Reference samples :", len(img_file[1]))
-    print("Test  samples :", len(img_file[2]))
-    print("Valid  samples :", len(img_file[3]))
+    logger.info("Train samples : %s", len(img_file[0]))
+    logger.info("Reference samples : %s", len(img_file[1]))
+    logger.info("Test  samples : %s", len(img_file[2]))
+    logger.info("Valid  samples : %s", len(img_file[3]))
 
     # ---------------------------
     # --- Define data loaders ---
     # ---------------------------
-    trainset = source.dataset.Dataset(img_file[0], ano_file[0], ref_list = img_file[1], \
+    trainset = customized_dataset.Dataset(img_file[0], ano_file[0], ref_list = img_file[1], \
         classes=classes, train=True, randomize = randomize, args = args)
-    validset = source.dataset.Dataset(img_file[3], ano_file[3], ref_list = [], \
+    validset = customized_dataset.Dataset(img_file[3], ano_file[3], ref_list = [], \
         classes=classes, train=False, randomize = False, args = args, p_down_scale=0.0)
 
     train_loader = DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=8)
     valid_loader = DataLoader(validset, batch_size=batch_size, shuffle=False, num_workers=8)
 
-    testset = source.dataset.Dataset(img_file[2], ano_file[2], ref_list = [], \
+    testset = customized_dataset.Dataset(img_file[2], ano_file[2], ref_list = [], \
         classes=classes, train=False, randomize = False, args = args, p_down_scale = 1.0)
     test_loader = DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=8)
 
     # --------------------------
     #       network setup
     # --------------------------
-    fcmixnet = source.fcsmix.FCsMix(args = args)
+    fcmixnet = fcsmix.FCsMix(args = args)
     # network = source.unet.UNet(in_channels=3*args.n_input_channels, classes=n_classes)
 
-    network = source.networks.load_network(args=args, n_classes=n_classes)
+    network = networks.load_network(args=args, n_classes=n_classes)
     if args.loss_type == "jaccard":
-        criterion = source.losses.JaccardLoss(class_weights=classes_wt)
+        criterion = losses.JaccardLoss(class_weights=classes_wt)
     elif args.loss_type == "bce":
         criterion = nn.CEWithLogitsLoss() #cross entropy でいい
     else:
         raise ValueError("loss function's name is NOT correct")
 
-
-    metric = source.metrics.IoU()
-    #params = [fcmixnet.parameters(), network.parameters()]
-    #optimizer = torch.optim.Adam(itertools.chain(*params), lr=learning_rate)
+    metric = metrics.IoU()
     if optimize:
         optimizer_fcsmix = torch.optim.Adam(fcmixnet.parameters(), lr=learning_rate)
     optimizer_net = torch.optim.Adam(network.parameters(), lr=learning_rate)
 
     network_fout = f"{network.name}_s{seed}_{criterion.name}"
-    print("Model output name  :", network_fout)
+    logger.info("Model output name  : %s", network_fout)
 
     if torch.cuda.device_count() > 1:
-        print("Number of GPUs :", torch.cuda.device_count())
+        logger.info("Number of GPUs : %s", torch.cuda.device_count())
 
         fcmixnet = torch.nn.DataParallel(fcmixnet)
         network = torch.nn.DataParallel(network)
-        #params = [fcmixnet.module.parameters(), network.module.parameters()]
-        #optimizer = torch.optim.Adam([dict(params=itertools.chain(*params), lr=learning_rate)]
         if randomize and optimize:
             optimizer_fcsmix = torch.optim.Adam([dict(params=fcmixnet.module.parameters(), lr=learning_rate)])
         optimizer_net = torch.optim.Adam([dict(params=network.module.parameters(), lr=learning_rate)])
@@ -162,9 +154,9 @@ def main(args):
 
     for epoch in range(n_epochs):
         
-        print(f"\nEpoch: {epoch + 1}")
+        logger.info("\nEpoch: %s", epoch + 1)
 
-        logs_train = source.runner.train_epoch(
+        logs_train = runner.train_epoch(
             premodel = fcmixnet,
             model=network,
             optimizers=optimizers,
@@ -178,7 +170,7 @@ def main(args):
             args = args,
         )
 
-        logs_valid = source.runner.valid_epoch(
+        logs_valid = runner.valid_epoch(
             model=network,
             criterion=criterion,
             metric=metric,
@@ -193,9 +185,9 @@ def main(args):
 
         
         if (epoch+1>50) and ((epoch+1)%20 == 0):
-            test_iou, _ = source.runner.test(
+            test_iou, _ = runner.test(
                 model=network,
-                metric=source.metrics.iou,
+                metric=metrics.iou,
                 n_classes = n_classes,
                 dataloader=test_loader,
                 device=device,
@@ -206,8 +198,8 @@ def main(args):
                 logs = logs, 
                 epoch = epoch, 
                 )
-            print("test iou: ", test_iou)
-            print("test miou: ", np.mean(test_iou))
+            logger.info("test iou: %s", test_iou)
+            logger.info("test miou: %s", np.mean(test_iou))
             test_ious[epoch+1] = np.mean(test_iou)
 
 
@@ -223,22 +215,20 @@ def main(args):
             args,
         )
 
-        l = logs_valid[criterion.name]
-        m = np.mean(logs_valid[metric.name])
-        if best_loss > l:
-            best_loss = l
-            #torch.save(network, os.path.join(outdir, f"{network_fout}.pth"))
-            torch.save(fcmixnet.state_dict(), os.path.join(outdir, f"fcmixnet.pth"))
+        loss_value = logs_valid[criterion.name]
+        mean_metric_value = np.mean(logs_valid[metric.name])
+        if best_loss > loss_value:
+            best_loss = loss_value
+            torch.save(fcmixnet.state_dict(), os.path.join(outdir, "fcmixnet.pth"))
             torch.save(network.state_dict(), os.path.join(outdir, f"{network_fout}.pth"))
-            print("Model saved based on loss !")
-        if best_metrix < m:
-            best_metrix = m
-            torch.save(fcmixnet.state_dict(), os.path.join(outdir, f"fcmixnet_metrix.pth"))
+            logger.info("Model saved based on loss !")
+        if best_metrix < mean_metric_value:
+            best_metrix = mean_metric_value
+            torch.save(fcmixnet.state_dict(), os.path.join(outdir, "fcmixnet_metrix.pth"))
             torch.save(network.state_dict(), os.path.join(outdir, f"{network_fout}_metrix.pth"))
-            print("Model saved based on matrix !")
+            logger.info("Model saved based on matrix !")
 
-
-    print(f"Completed: {(time.time() - start)/60.0:.4f} min.")
+    logger.info("Completed: %.4f min.", (time.time() - start) / 60.0)
     torch.save(network.state_dict(), os.path.join(outdir, f"{network_fout}_final.pth"))
 
     if optimize and not args.MFI:
@@ -250,33 +240,30 @@ def main(args):
         mask_for_save = mask_for_save.detach().cpu().numpy()
         np.save(outdir + '/mask', mask_for_save)
 
-
     learned_path = os.path.join(outdir, f"{network_fout}.pth")
-    #network = torch.load(learned_path)
     network.load_state_dict(torch.load(learned_path))
 
-    testset = source.dataset.Dataset(img_file[2], ano_file[2], ref_list = [], \
+    testset = customized_dataset.Dataset(img_file[2], ano_file[2], ref_list = [], \
         classes=classes, train=False, final = True, args=args)
     test_loader = DataLoader(testset, batch_size=1, shuffle=False, num_workers=8)
 
-
-    test_iou, df = source.runner.final(
+    test_iou, df_results = runner.final(
             model=network,
-            metric=source.metrics.iou,
+            metric=metrics.iou,
             n_classes=n_classes,
             dataloader=test_loader,
             device=device,
-            args=args, 
-            l2a=label_to_anno, 
-            path = outdir, 
-            class_obj=class_obj, 
-            logs = logs, 
-            epoch = -1, 
+            args=args,
+            l2a=label_to_anno,
+            path = outdir,
+            class_obj=class_obj,
+            logs = logs,
+            epoch = -1,
         )
-    print(test_iou)
-    print(np.mean(test_iou))
-    df.to_csv(outdir +"/log_output.csv")
-    print("save test results")
+    logger.info(test_iou)
+    logger.info(np.mean(test_iou))
+    df_results.to_csv(outdir +"/log_output.csv")
+    logger.info("save test results")
 
 if __name__ == '__main__':
     base = source.options.BaseOptions()

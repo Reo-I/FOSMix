@@ -1,6 +1,7 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from pydantic_core.core_schema import FieldValidationInfo
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Any, Optional
+import torch
 
 class DatasetConstants(BaseModel):
     classes: List[int]
@@ -84,3 +85,18 @@ flair_meta_data = {
 
 OEM = DatasetConstants(**oem_meta_data)
 FLAIR = DatasetConstants(**flair_meta_data)
+
+class ModelConfig:
+    arbitrary_types_allowed = True
+
+class BatchData(BaseModel):
+    class Config(ModelConfig):
+        pass
+    x: torch.Tensor
+    y: torch.Tensor
+    fn: List[str]
+    ref: Optional[torch.Tensor] = Field(default=None)
+    color_x: Optional[torch.Tensor]= Field(default=None)
+    domain: Optional[List[str]]= Field(default=None)
+    shape: tuple
+    domain: Optional[List[str]] = Field(default=None)

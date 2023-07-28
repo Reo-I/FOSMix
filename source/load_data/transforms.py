@@ -7,9 +7,7 @@ import cv2
 import math
 
 # reference: https://albumentations.ai/
-
 warnings.simplefilter("ignore")
-
 
 class ToTensor:
     def __init__(self, classes):
@@ -34,12 +32,7 @@ class mask2tensor:
         msk = np.stack(msks, axis=-1).astype(np.float32)
         background = 1 - msk.sum(axis=-1, keepdims=True)
         mask = TF.to_tensor(np.concatenate((background, msk), axis=-1))
-
-        """for key in [k for k in sample.keys() if k != "mask"]:
-            sample[key] = TF.to_tensor(sample[key].astype(np.float32) / 255.0)"""
         return mask
-
-
 
 def train_augm(sample, size=512, args = None, p_down_scale = None):
     augms = [
@@ -96,5 +89,3 @@ def final_augm(sample, size = 512, args = None, p_down_scale = None):
     imgs.append(img[::-1, ::-1, :].copy())
     
     return {"image":imgs, "mask":np.array(sample["mask"])}
-
-

@@ -1,4 +1,5 @@
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 
@@ -17,5 +18,12 @@ var/
 .DS_Store
 **/.DS_Store
 
+# log
+logfile.log
+
+# Check files
+a.py
+
 #VS code
 vscode/
+.vscode/

@@ -3,8 +3,18 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from PIL import Image
 import pathlib
+import copy
+import json
+import logging
+from logging import getLogger, config
+
+logger = logging.getLogger(__name__)
+
 
 def progress(train_logs, valid_logs, loss_nm, metric_nm, nepochs, outdir, fn_out, test_ious, opt):
+    """
+    Show the progress of training / validation / test 
+    """
     loss_t = [dic[loss_nm] for dic in train_logs]
     if opt.randomize and opt.optimize:
         mask_loss_t = [dic["mask"] for dic in train_logs]
@@ -92,7 +102,6 @@ def save_predicted_img(sample, gt, pr, classes, label_to_anno, path):
     plt.imshow(raw)
     plt.title("image")
     plt.savefig(path + f"/{rgb_fname}.png")
-    #plt.show()
     plt.clf()
     plt.close()
 
@@ -108,3 +117,28 @@ def show_test_result(matrix, class_obj_list, path):
     plt.savefig(f"{path}/test_matrix.png", bbox_inches='tight')
     plt.show()
     return None
+
+class ColoredStreamHandler(logging.StreamHandler):
+    # From https://pod.hatenablog.com/entry/2020/03/01/221715
+    cmap = {
+        "TRACE": "[TRACE]",
+        "DEBUG": "\x1b[0;36mDEBUG\x1b[0m",
+        "INFO": "\x1b[0;32mINFO\x1b[0m",
+        "WARNING": "\x1b[0;33mWARN\x1b[0m",
+        "WARN": "\x1b[0;33mwWARN\x1b[0m",
+        "ERROR": "\x1b[0;31mERROR\x1b[0m",
+        "ALERT": "\x1b[0;37;41mALERT\x1b[0m",
+        "CRITICAL": "\x1b[0;37;41mCRITICAL\x1b[0m",
+    }
+
+    def emit(self, record: logging.LogRecord) -> None:
+        record = copy.deepcopy(record)
+        record.levelname = self.cmap[record.levelname]
+        super().emit(record)
+def set_logging() -> None:
+    """
+    Set the logging 
+    """
+    with open('./log_config.json', 'r', encoding='utf-8') as f:
+        log_conf = json.load(f)
+    config.dictConfig(log_conf)

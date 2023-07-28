@@ -6,19 +6,32 @@ import rasterio
 from PIL import Image
 import albumentations as A
 
-
 import torch
 from torch.utils.data import Dataset as BaseDataset
-from . import transforms as aug
 from torchvision import transforms as T
-
-
+from . import transforms as aug
 
 def load_multiband(path):
+    """
+    Loads a multi-band image.
+    
+    Args:
+        path: Filepath to the image.
+    Returns:
+        Multi-band (3-channels) image as numpy array.
+    """
     src = rasterio.open(path, "r")
     return (np.moveaxis(src.read(), 0, -1)).astype(np.uint8)
 
 def load_grayscale(path):
+    """
+    Loads a grayscale image, returns it as a 2D array.
+
+    Args:
+        path: Filepath to the label.
+    Returns:
+        Label as numpy array.
+    """
     src = rasterio.open(path, "r")
     return (src.read(1)).astype(np.uint8)
 
@@ -56,7 +69,7 @@ class Dataset(BaseDataset):
         self.load_grayscale = load_grayscale
 
         self.pad = A.Compose([A.PadIfNeeded(min_height=self.size, min_width=self.size)])
-        self.randcrop_for_ref = T.RandomCrop(self.size, pad_if_needed=True, padding_mode = "symmetric")
+        self.rand_crop_for_ref = T.RandomCrop(self.size, pad_if_needed=True, padding_mode = "symmetric")
 
         if self.args.prob_imagenet_ref>0:
             self.imgnet_path = self.args.imgnet_path
@@ -84,9 +97,8 @@ class Dataset(BaseDataset):
 
         if ref is None:
             return img, ano, None
-        
         #For the trainging phase, ref is also randomly cropped 
-        ref = self.randcrop_for_ref(ref)
+        ref = self.rand_crop_for_ref(ref)
         return img, ano, np.array(ref)
     
 
@@ -120,12 +132,12 @@ class Dataset(BaseDataset):
                         + [1/2*(1/len(self.ref_list))]*len(self.ref_list)
                 )
                 ref = Image.open(self.concatenate_list[ref_idx]) if self.args.dataset == "OEM" \
-                else self.load_multiband(self.concatenate_list[idx])[:, :, :3]
+                    else self.load_multiband(self.concatenate_list[idx])[:, :, :3]
             else:
                 #ref from reference domains
                 ref_idx = np.random.choice(len(self.ref_list))
                 ref = Image.open(self.ref_list[ref_idx]) if self.args.dataset == "OEM" \
-                else self.load_multiband(self.ref_list[idx])[:, :, :3]
+                    else self.load_multiband(self.ref_list[idx])[:, :, :3]
             
             if self.args.dataset == "OEM":
                 img, msk, ref = self.random_crop(img, msk, ref)
@@ -157,7 +169,7 @@ class Dataset(BaseDataset):
             return {"x": data["image"], "y": data["mask"], "fn": self.img_list[idx], "shape": msk.shape, "domain":domain}
         
         data["ref"] = self.t(ref) 
-        return {"x": data["image"], "y": data["mask"], "fn": self.img_list[idx], "ref":data["ref"], "color_x":data["color_x"]}
+        return {"x": data["image"], "y": data["mask"], "fn": self.img_list[idx], "shape": msk.shape, "ref":data["ref"], "color_x":data["color_x"]}
     
     def __len__(self):
         return len(self.img_list)

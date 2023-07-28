@@ -1,6 +1,7 @@
 import argparse
-from ast import parse
+import logging
 
+logger = logging.getLogger(__name__)
 class BaseOptions():
     def __init__(self) -> None:
         pass
@@ -65,7 +66,7 @@ class BaseOptions():
 
     def show_options(self, opt):
         message = ''
-        message += '----------------- Options ---------------\n'
+        message += '\n----------------- Options ---------------\n'
         for k, v in sorted(vars(opt).items()):
             if str(k) == "imgnet_path":
                 continue
@@ -75,4 +76,4 @@ class BaseOptions():
             else:
                 message += '{:<15}: {:<30}\n'.format(str(k), str(v))
         message += '----------------- End -------------------'
-        print(f"{message}")
+        logger.info(message)

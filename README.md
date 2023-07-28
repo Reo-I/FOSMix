@@ -14,56 +14,48 @@ Modify the installed packages
 ./modify_package_contents.sh
 ```
 ## TODO
-- 不要なコードの削除
-- printからloggerに変更
+ - ~~不要なコードの削除~~
+ - 型の定義の追加
+ - ~~printからloggerに変更~~
+ - ~~sourceディレクトリのファイル置き場のクリーン化~~
+ - file_pathなどをconfigで作成
  - modify_package._contents.shの動作確認
- - sourceディレクトリのファイル置き場のクリーン化
  - colabで動作確認
 
 
-# コードの説明
+# Argument Description
 
-## 引数の説明
+Hyper parameters with * is required. 
 
-*は必須項目
+1. **--dataset** (str*) : Select the dataset.
+    - OEM (OpenEarthMap)
+    - FLAIR
 
-1. --dataset(str*) : データセットの選択   
+2. **--n_epochs** (int*): Number of training epochs.
+    - 150 (for OEM dataset)
+    - 50 (for FLAIR dataset)
 
-        OEM (OpenEarthMap)
-        FLAIR
+3. **--ver** (int*): Version.
 
-2. --n_epochs(int*) : 学習エポック数
+4. **--final** (bool): Use the final model parameters for testing.
+    - 0 (Use the parameters that gave the best results on the validation data for testing)
+    - 1 (Use the last parameters)
 
-        150 (OEMデータセット)
-        50 (FLAIRデータセット)
+5. **--randomize** (bool*): Randomize images ot not, i.e., whether to use the baseline or the proposal.
+    - 0 (baseline)
+    - 1 (use the proposal)
 
-3. --ver(int*) : バージョン
+6. **--optimize** (bool*): Optimize the mask or not. When `optimize` is 1, `randomize` is always 1.
+    - 0 (baseline or FULL MIX)
+    - 1 (OPTIMAL MIX)
 
-4. --final(bool) : テストする際のモデルパラメータを最終的なパラメータにする
+7. **--aug_color** (float): Probability of color change in augmentation.
 
-        0 (validationデータに対する結果が最も良いパラメータをテスト時に使用)
-        1 (最後のパラメータを使用)
+8. **--MFI** (int*): Mask From Image or not, whether to generate the OPTIMAL MASK from the image.
+    - 0 (Learn and use one mask for all images)
+    - 1 (Generate from the image)
+  
+9. **--fullmask** (int*): Use FULL MIX or not. You can Also use the `optimize` together with this option. If `fullmask` is 1, `randomize` must always be set to 1 as well.
+    - 0 (Do not use FULL MIX)
+    - 1 (Use FULL MIX)
 
-5. --randomize(bool*) : 画像をランダム化するかしないか、つまりbaselineを使用するか提案を使用するか
-
-        0 (baseline)
-        1 (何かしらの提案のパートを使用する)
-
-6. --optimize(bool*) : マスクを最適化するか否か、`optimize`が1の時は必ず`randomize`が1となる
-
-        0 (baseline or FULL MIX)
-        1 (OPTIMAL MIX)
-
-7. --aug_color(float) : Augmentationでカラー変化を行う確率
-
-        from 0 to 1
-
-8. --MFI (int*) : Mask from Image, OPTIMAL MASKを画像から生成するか否か
-
-        0 (1つのマスクを全ての画像に対して学習し使用)
-        1 (画像から生成)
-
-9. --fullmask (int*) : FULL MIXを使用するか否か
-
-        0 (FULL MIXを使用しない)
-        1 (FULL MIXを使用)
