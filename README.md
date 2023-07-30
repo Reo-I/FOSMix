@@ -18,6 +18,13 @@ $ (fosmix) chmod 777 modify_package_contents.sh
 $ (fosmix) ./modify_package_contents.sh
 ```
 
+## Step 2
+Train the model
+
+```bash
+$ (fosmix) ./train.sh
+```
+
 
 # Argument Description
 
