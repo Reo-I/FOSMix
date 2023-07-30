@@ -17,14 +17,6 @@ Modify the installed packages
 $ (fosmix) chmod 777 modify_package_contents.sh
 $ (fosmix) ./modify_package_contents.sh
 ```
-## TODO
- - ~~不要なコードの削除~~
- - 型の定義の追加
- - ~~printからloggerに変更~~
- - ~~sourceディレクトリのファイル置き場のクリーン化~~
- - ~~file_pathなどをconfigで作成~~
- - ~~modify_package._contents.shの動作確認~~
- - colabで動作確認
 
 
 # Argument Description

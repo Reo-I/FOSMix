@@ -16,7 +16,6 @@ from source.training import losses, metrics, runner
 from source.constant import OEM, FLAIR, _load_config
 from source.utils import set_logging
 from logging import getLogger
-#logger = logging.getLogger(__name__)
 
 def main(args):
     # -----------------------
