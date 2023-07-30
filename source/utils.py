@@ -41,7 +41,6 @@ def progress(train_logs, valid_logs, loss_nm, metric_nm, nepochs, outdir, fn_out
     if len(test_ious)>0:
         plt.scatter(test_ious.keys(), test_ious.values(), c = "deepskyblue", s = 60, label = "Test")
 
-
     plt.title("Training and Validation Metric")
     plt.xlabel("Epochs")
     plt.xlim(0, nepochs)
@@ -77,8 +76,6 @@ def progress(train_logs, valid_logs, loss_nm, metric_nm, nepochs, outdir, fn_out
     plt.savefig(f"{outdir}/{fn_out}.png", bbox_inches="tight")
     plt.clf()
     plt.close()
-
-    return
 
 def save_predicted_img(sample, gt, pr, classes, label_to_anno, path):
     rgb_fname = pathlib.Path(sample["fn"][0]).stem
@@ -116,7 +113,6 @@ def show_test_result(matrix, class_obj_list, path):
     plt.ylabel("Ground Truth")
     plt.savefig(f"{path}/test_matrix.png", bbox_inches='tight')
     plt.show()
-    return None
 
 class ColoredStreamHandler(logging.StreamHandler):
     # From https://pod.hatenablog.com/entry/2020/03/01/221715
@@ -135,6 +131,7 @@ class ColoredStreamHandler(logging.StreamHandler):
         record = copy.deepcopy(record)
         record.levelname = self.cmap[record.levelname]
         super().emit(record)
+
 def set_logging() -> None:
     """
     Set the logging 

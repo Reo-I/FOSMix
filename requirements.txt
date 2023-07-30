@@ -1,5 +1,6 @@
 affine==2.3.0
 albumentations==1.1.0
+annotated-types==0.5.0 
 asn1crypto==0.24.0
 attrs==21.4.0
 awscli==1.21.3
@@ -94,6 +95,8 @@ pycairo==1.16.3
 pycparser==2.14
 pycups==1.9.72
 pycurl==7.43.0.2
+pydantic==2.1.1
+pydantic-core==2.4.0
 PyGObject==3.28.3
 pyinotify==0.9.6
 pyOpenSSL==19.0.0

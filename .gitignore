@@ -14,6 +14,9 @@ var/
 # Environments
 .env
 
+# Results
+weights*/
+
 # Mac
 .DS_Store
 **/.DS_Store
@@ -22,7 +25,7 @@ var/
 logfile.log
 
 # Check files
-a.py
+check.py
 
 #VS code
 vscode/

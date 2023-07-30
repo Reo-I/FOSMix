@@ -255,12 +255,12 @@ def final(
     n_classes=None,
     dataloader=None,
     device="cpu",
-    args = None, 
-    l2a = None, 
-    path = None, 
-    class_obj = None, 
-    logs = None, 
-    epoch = None, 
+    args = None,
+    l2a = None,
+    path = None,
+    class_obj = None,
+    logs = None,
+    epoch = None,
 ):
     test_iou = np.zeros(n_classes-1)
     test_n = np.zeros(n_classes-1)

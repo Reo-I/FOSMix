@@ -1,7 +1,16 @@
+import os
+import json
+from pathlib import Path
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core.core_schema import FieldValidationInfo
 from typing import List, Dict, Union, Any, Optional
+import logging
 import torch
+
+HOME: Path = Path(__file__).resolve().parents[1]
+CONFIG_FILENAME = os.environ.get("CONFIG_FILENAME", "config.json")
+CONFIG_DIR = HOME / Path("config")
+logger = logging.getLogger(__name__)
 
 class DatasetConstants(BaseModel):
     classes: List[int]
@@ -52,31 +61,31 @@ oem_meta_data = {
 flair_meta_data = {
     "classes": list(range(1, 13)),
     "label_to_anno": {
-        0: [0, 0, 0], 
-        1: [219, 14, 154], 
-        2: [147, 142, 123], 
-        3: [248, 12, 0], 
-        4: [169, 113, 1], 
-        5: [21, 83, 174], 
-        6: [25, 74, 38], 
-        7: [70, 228, 131], 
-        8: [243, 166, 13], 
-        9: [102, 0, 130], 
-        10: [85, 255, 0], 
-        11: [255, 243, 13], 
+        0: [0, 0, 0],
+        1: [219, 14, 154],
+        2: [147, 142, 123],
+        3: [248, 12, 0],
+        4: [169, 113, 1],
+        5: [21, 83, 174],
+        6: [25, 74, 38],
+        7: [70, 228, 131],
+        8: [243, 166, 13],
+        9: [102, 0, 130],
+        10: [85, 255, 0],
+        11: [255, 243, 13],
         12: [228, 223, 124]
     },
     "class_obj" : {
-        0:"None", 
-        1: "building", 
-        2:"pervious surface", 
-        3: "impervious surface", 
+        0:"None",
+        1: "building",
+        2:"pervious surface",
+        3: "impervious surface",
         4:"bare soil",
-        5: "water", 
+        5: "water",
         6: "coniferous",
-        7:"deciduous", 
-        8: "brushwood", 
-        9: "vineyard", 
+        7:"deciduous",
+        8: "brushwood",
+        9: "vineyard",
         10: "herbaceous vegetation",
         11:"agricultural land",
         12:"plowed land"
@@ -99,4 +108,18 @@ class BatchData(BaseModel):
     color_x: Optional[torch.Tensor]= Field(default=None)
     domain: Optional[List[str]]= Field(default=None)
     shape: tuple
-    domain: Optional[List[str]] = Field(default=None)
+
+
+class FosmixConfig(BaseModel):
+    data_dir: Dict[str, str]
+
+def _load_config():
+    filepath = CONFIG_DIR / CONFIG_FILENAME
+    with open(filepath, 'r', encoding='utf-8') as file:
+        config_dict = json.load(file)
+    try:
+        config = FosmixConfig(**config_dict)
+    except TypeError:
+        logger.warning("Config data types are not correct.")
+        logger.warning(config_dict)
+    return config

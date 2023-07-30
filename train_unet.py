@@ -1,15 +1,11 @@
-#from cgi import test
-from cmath import log
 import os
 import time
 import logging
-import sys
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-import segmentation_models_pytorch as smp
 import source
 from source.load_data import (
     dataset as customized_dataset,
@@ -17,14 +13,16 @@ from source.load_data import (
 )
 from source.models import fcsmix, networks
 from source.training import losses, metrics, runner
-from source.constant import OEM, FLAIR
-
-logger = logging.getLogger(__name__)
+from source.constant import OEM, FLAIR, _load_config
+from source.utils import set_logging
+from logging import getLogger
+#logger = logging.getLogger(__name__)
 
 def main(args):
     # -----------------------
     # --- Main parameters ---
     # -----------------------
+    config = _load_config()
     dataset = args.dataset
     seed = args.seed
     learning_rate = args.learning_rate
@@ -69,10 +67,9 @@ def main(args):
     # --- split training and validation sets ---
     # -------------------------------------------
     if args.server == "wisteria":
-        path = "/work/gu15/k36090/" # change this to your data path
+        path = config.data_dir["wisteria"] 
     elif args.server == "colab":
-        path = "/content/drive/My Drive/research/data/"
-
+        path = config.data_dir["colab"]
 
     if dataset == "OEM":
         path = path + "openearthmap/"
@@ -108,8 +105,6 @@ def main(args):
     #       network setup
     # --------------------------
     fcmixnet = fcsmix.FCsMix(args = args)
-    # network = source.unet.UNet(in_channels=3*args.n_input_channels, classes=n_classes)
-
     network = networks.load_network(args=args, n_classes=n_classes)
     if args.loss_type == "jaccard":
         criterion = losses.JaccardLoss(class_weights=classes_wt)
@@ -151,7 +146,7 @@ def main(args):
     logs = []
 
     test_ious = {}
-
+    
     for epoch in range(n_epochs):
         
         logger.info("\nEpoch: %s", epoch + 1)
@@ -177,12 +172,10 @@ def main(args):
             dataloader=valid_loader,
             device=device,
             n_classes=n_classes,
-            args=args, 
+            args=args,
         )
-
         train_hist.append(logs_train)
         valid_hist.append(logs_valid)
-
         
         if (epoch+1>50) and ((epoch+1)%20 == 0):
             test_iou, _ = runner.test(
@@ -191,12 +184,12 @@ def main(args):
                 n_classes = n_classes,
                 dataloader=test_loader,
                 device=device,
-                args=args, 
-                l2a=label_to_anno, 
-                path = results_img_dir, 
-                class_obj=class_obj, 
-                logs = logs, 
-                epoch = epoch, 
+                args=args,
+                l2a=label_to_anno,
+                path = results_img_dir,
+                class_obj=class_obj,
+                logs = logs,
+                epoch = epoch,
                 )
             logger.info("test iou: %s", test_iou)
             logger.info("test miou: %s", np.mean(test_iou))
@@ -211,7 +204,7 @@ def main(args):
             n_epochs,
             outdir,
             network_fout,
-            test_ious, 
+            test_ious,
             args,
         )
 
@@ -263,11 +256,13 @@ def main(args):
     logger.info(test_iou)
     logger.info(np.mean(test_iou))
     df_results.to_csv(outdir +"/log_output.csv")
-    logger.info("save test results")
+    logger.info("Save test results")
 
 if __name__ == '__main__':
     base = source.options.BaseOptions()
     args = base.initialize()
     base.show_options(args)
+    set_logging()
+    logger = getLogger(__name__)
     main(args)
     
