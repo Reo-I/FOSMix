@@ -258,10 +258,10 @@ def main(args):
     logger.info("Save test results")
 
 if __name__ == '__main__':
+    set_logging()
+    logger = getLogger(__name__)
     base = source.options.BaseOptions()
     args = base.initialize()
     base.show_options(args)
-    set_logging()
-    logger = getLogger(__name__)
     main(args)
     
